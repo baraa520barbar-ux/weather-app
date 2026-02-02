@@ -31,7 +31,6 @@ async function getGeoData(cityName) {
 
         const { latitude, longitude } = data.results[0];
         
-        // طلب بيانات الطقس بناءً على الإحداثيات
         const weatherInfo = await getWeatherData(latitude, longitude); 
         
         if (weatherInfo) {
@@ -72,7 +71,6 @@ function updateUI(data, cityName, unit = "C") {
     let temp = data.current.temperature_2m;
     let feelsLike = data.current.apparent_temperature;
 
-    // تحويل الوحدة لو المستخدم اختار فهرنهايت
     if (unit === "F") {
         temp = (temp * 9/5) + 32;
         feelsLike = (feelsLike * 9/5) + 32;
@@ -84,12 +82,12 @@ function updateUI(data, cityName, unit = "C") {
     document.getElementById('pWind').innerText = data.current.wind_speed_10m + " km/h";
     document.getElementById('pPrecipitation').innerText = data.current.precipitation + " mm";
 
-    // تحديث الأيقونة بناءً على كود الطقس (أدق من الحرارة)
+    // ✅ تم التعديل هنا: شلنا السلاش اللي في الأول
     const weatherIcon = document.querySelector('.current__icon');
     const status = getWeatherCodeName(data.current.weather_code);
-    weatherIcon.src = `/assets/images/icon-${status}.webp`;
+    weatherIcon.src = `assets/images/icon-${status}.webp`;
 
-    setupHourlyDropdown(data); // تعبئة الـ Select بالـ 7 أيام
+    setupHourlyDropdown(data);
     displayHourlyData(data, 0);
 }
 
@@ -106,10 +104,8 @@ function loadDailyForecast(dailyData) {
         let dailyHigh = Math.round(dailyData.temperature_2m_max[i]) + "°";
         let dailyLow = Math.round(dailyData.temperature_2m_min[i]) + "°";
 
-        // مسح المحتوى القديم
         dvForecastDay.innerHTML = "";
 
-        // استخدام الـ Helper function لإضافة العناصر
         addDailyElement("p", "daily__day-title", dayOfWeek, "", dvForecastDay, "afterbegin");
         addDailyElement("img", "daily__day-icon", "", status, dvForecastDay, "beforeend");
         
@@ -122,12 +118,13 @@ function loadDailyForecast(dailyData) {
     }
 }
 
-// 5. دالة مساعدة لإنشاء عناصر HTML (كانت ناقصة عندك)
+// 5. دالة مساعدة
 function addDailyElement(tag, className, text, iconName, parent, position) {
     const el = document.createElement(tag);
     el.className = className;
     if (tag === "img") {
-        el.src = `/assets/images/icon-${iconName}.webp`;
+        // ✅ تم التعديل هنا: شلنا السلاش اللي في الأول
+        el.src = `assets/images/icon-${iconName}.webp`;
         el.alt = iconName;
     } else {
         el.innerText = text;
@@ -140,7 +137,7 @@ function addDailyElement(tag, className, text, iconName, parent, position) {
     }
 }
 
-// 6. تحويل أكواد Open-Meteo لأسماء صور
+// 6. تحويل الأكواد
 function getWeatherCodeName(code) {
     if (code === 0) return 'sunny';
     if ([1, 2, 3].includes(code)) return 'partly-cloudy';
@@ -151,7 +148,7 @@ function getWeatherCodeName(code) {
     return 'sunny';
 }
 
-// 7. مستمع تغيير الوحدات
+// 7. الوحدات
 document.getElementById('ddlUnits').addEventListener('change', (e) => {
     const selectedUnit = e.target.value;
     if (lastWeatherData && selectedUnit !== "") {
@@ -159,32 +156,29 @@ document.getElementById('ddlUnits').addEventListener('change', (e) => {
     }
 });
 
-// 1. دالة لتعبئة الـ Dropdown بالـ 7 أيام القادمة
 function setupHourlyDropdown(data) {
     const ddlDay = document.getElementById('ddlDay');
-    ddlDay.innerHTML = ""; // مسح القديم
+    ddlDay.innerHTML = ""; 
 
     data.daily.time.forEach((dateStr, index) => {
         const date = new Date(dateStr);
         const dayName = new Intl.DateTimeFormat("en-US", { weekday: "long" }).format(date);
         
         const option = document.createElement('option');
-        option.value = index; // هنستخدم الـ index عشان نعرف نختار الساعات
+        option.value = index; 
         option.innerText = index === 0 ? "Today" : dayName;
         ddlDay.appendChild(option);
     });
 
-    // إضافة حدث عند تغيير اليوم من الـ Dropdown
     ddlDay.onchange = (e) => {
         displayHourlyData(data, e.target.value);
     };
 }
 
-// 2. دالة لعرض بيانات الساعات بناءً على اليوم المختار
 function displayHourlyData(data, dayIndex) {
     const hourlyData = data.hourly;
-    const startIndex = dayIndex * 24; // بداية الساعات لليوم المختار
-    const endIndex = startIndex + 24; // نهاية الساعات (24 ساعة)
+    const startIndex = dayIndex * 24; 
+    const endIndex = startIndex + 24; 
 
     for (let i = 0; i < 24; i++) {
         const currentHourIndex = startIndex + i;
@@ -194,26 +188,23 @@ function displayHourlyData(data, dayIndex) {
 
         const time = new Date(hourlyData.time[currentHourIndex]).getHours();
         const ampm = time >= 12 ? 'PM' : 'AM';
-        const displayTime = (time % 12 || 12) + ampm; // تحويل صيغة 24 لـ 12 ساعة
+        const displayTime = (time % 12 || 12) + ampm; 
 
         const temp = Math.round(hourlyData.temperature_2m[currentHourIndex]) + "°";
         const status = getWeatherCodeName(hourlyData.weather_code[currentHourIndex]);
 
-        // تنظيف المربع وبناؤه
         dvHour.innerHTML = "";
         
-        // إضافة الوقت
         const pTime = document.createElement('p');
         pTime.className = "hourly__hour-time";
         pTime.innerText = displayTime;
         
-        // إضافة الأيقونة
         const img = document.createElement('img');
         img.className = "hourly__hour-icon";
-        img.src = `/assets/images/icon-${status}.webp`;
+        
+        img.src = `assets/images/icon-${status}.webp`;
         img.alt = status;
 
-        // إضافة الحرارة
         const pTemp = document.createElement('p');
         pTemp.className = "hourly__hour-temp";
         pTemp.innerText = temp;
